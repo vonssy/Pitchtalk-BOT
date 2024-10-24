@@ -69,13 +69,16 @@ class PitchTalk:
 
     def auth(self, query: str, user_id: str, username: str):
         url = 'https://api.pitchtalk.app/v1/api/auth'
-        self.headers.update({'Content-Type': 'application/json'})
         data = json.dumps({
             'hash': query,
             'photoUrl': '',
             'referralCode': '3dbacc',
             'telegramId': user_id,
             'username': username
+        })
+        self.headers.update({
+            'Content-Type': 'application/json',
+            'X-Telegram-Hash': query
         })
 
         response = self.session.post(url, headers=self.headers, data=data)
@@ -84,11 +87,12 @@ class PitchTalk:
         else:
             return None
         
-    def claim_refferal(self, token: str):
+    def claim_refferal(self, token: str, query: str):
         url = 'https://api.pitchtalk.app/v1/api/users/claim-referral'
         self.headers.update({
             'Authorization': f'Bearer {token}',
-            'Content-Type': 'application/json'
+            'Content-Type': 'application/json',
+            'X-Telegram-Hash': query
         })
 
         response = self.session.post(url, headers=self.headers)
@@ -97,11 +101,12 @@ class PitchTalk:
         else:
             return None
 
-    def farmings(self, token: str):
+    def farmings(self, token: str, query: str):
         url = 'https://api.pitchtalk.app/v1/api/farmings'
         self.headers.update({
             'Authorization': f'Bearer {token}',
-            'Content-Type': 'application/json'
+            'Content-Type': 'application/json',
+            'X-Telegram-Hash': query
         })
 
         response = self.session.get(url, headers=self.headers)
@@ -115,11 +120,12 @@ class PitchTalk:
             self.log(f"[ JSON Error ]: {e}")
             return None
         
-    def create_farming(self, token: str):
+    def create_farming(self, token: str, query: str):
         url = 'https://api.pitchtalk.app/v1/api/users/create-farming'
         self.headers.update({
             'Authorization': f'Bearer {token}',
-            'Content-Type': 'application/json'
+            'Content-Type': 'application/json',
+            'X-Telegram-Hash': query
         })
 
         response = self.session.post(url, headers=self.headers)
@@ -128,11 +134,12 @@ class PitchTalk:
         else:
             return None
         
-    def claim_farming(self, token: str):
+    def claim_farming(self, token: str, query: str):
         url = 'https://api.pitchtalk.app/v1/api/users/claim-farming'
         self.headers.update({
             'Authorization': f'Bearer {token}',
-            'Content-Type': 'application/json'
+            'Content-Type': 'application/json',
+            'X-Telegram-Hash': query
         })
 
         response = self.session.post(url, headers=self.headers)
@@ -141,11 +148,12 @@ class PitchTalk:
         else:
             return None
         
-    def tasks(self, token: str):
+    def tasks(self, token: str, query: str):
         url = 'https://api.pitchtalk.app/v1/api/tasks'
         self.headers.update({
             'Authorization': f'Bearer {token}',
-            'Content-Type': 'application/json'
+            'Content-Type': 'application/json',
+            'X-Telegram-Hash': query
         })
 
         response = self.session.get(url, headers=self.headers)
@@ -154,13 +162,14 @@ class PitchTalk:
         else:
             return []
 
-    def start_tasks(self, token: str, task_id: str):
+    def start_tasks(self, token: str, query: str, task_id: str):
         url = f'https://api.pitchtalk.app/v1/api/tasks/{task_id}/start'
+        data = {}
         self.headers.update({
             'Authorization': f'Bearer {token}',
-            'Content-Type': 'application/json'
+            'Content-Type': 'application/json',
+            'X-Telegram-Hash': query
         })
-        data = {}
 
         response = self.session.post(url, headers=self.headers, json=data)
         if response.status_code == 201:
@@ -168,11 +177,12 @@ class PitchTalk:
         else:
             return {}
 
-    def verify_tasks(self, token: str):
+    def verify_tasks(self, token: str, query: str):
         url = 'https://api.pitchtalk.app/v1/api/tasks/verify'
         self.headers.update({
             'Authorization': f'Bearer {token}',
-            'Content-Type': 'application/json'
+            'Content-Type': 'application/json',
+            'X-Telegram-Hash': query
         })
 
         response = self.session.get(url, headers=self.headers)
@@ -195,13 +205,14 @@ class PitchTalk:
         self.current_slug_index = (self.current_slug_index + 1) % len(self.slugs)
         return slug
 
-    def daily_tasks(self, token: str, slug: str, post_link: str):
+    def daily_tasks(self, token: str, query: str, slug: str, post_link: str):
         url = 'https://api.pitchtalk.app/v1/api/tasks/create-daily'
+        data = json.dumps({'slug': slug, 'proof': post_link})
         self.headers.update({
             'Authorization': f'Bearer {token}',
-            'Content-Type': 'application/json'
+            'Content-Type': 'application/json',
+            'X-Telegram-Hash': query
         })
-        data = json.dumps({'slug': slug, 'proof': post_link})
 
         response = self.session.post(url, headers=self.headers, data=data)
         if response.status_code == 201:
@@ -233,7 +244,7 @@ class PitchTalk:
                 f"{Fore.WHITE + Style.BRIGHT} Account {username} {Style.RESET_ALL}"
                 f"{Fore.RED + Style.BRIGHT}]{Style.RESET_ALL}"
             )
-            return None
+            return
         
         if account:
             user = account['user']
@@ -274,7 +285,7 @@ class PitchTalk:
 
             refferal = user['referralRewards']
             if refferal != 0:
-                claim = self.claim_refferal(token)
+                claim = self.claim_refferal(token, query)
                 if claim:
                     self.log(
                         f"{Fore.MAGENTA + Style.BRIGHT}[ Refferal{Style.RESET_ALL}"
@@ -297,10 +308,10 @@ class PitchTalk:
                 )
             time.sleep(1)
 
-            farm = self.farmings(token)
+            farm = self.farmings(token, query)
 
             if not farm:
-                create = self.create_farming(token)
+                create = self.create_farming(token, query)
                 end_farm = create['farming']['endTime']
                 end_farm_utc = datetime.strptime(end_farm, '%Y-%m-%dT%H:%M:%S.%fZ')
                 end_farm_wib = pytz.utc.localize(end_farm_utc).astimezone(wib).strftime('%x %X %Z')
@@ -312,7 +323,7 @@ class PitchTalk:
                     f"{Fore.MAGENTA + Style.BRIGHT}]{Style.RESET_ALL}"
                 )
 
-                farm = self.farmings(token)
+                farm = self.farmings(token, query)
             time.sleep(1)
 
             if farm:
@@ -320,13 +331,13 @@ class PitchTalk:
                 end_farm_utc = datetime.strptime(end_farm, '%Y-%m-%dT%H:%M:%S.%fZ')
                 end_farm_wib = pytz.utc.localize(end_farm_utc).astimezone(wib).strftime('%x %X %Z')
 
-                claim = self.claim_farming(token)
+                claim = self.claim_farming(token, query)
                 if claim:
                     self.log(
                         f"{Fore.MAGENTA + Style.BRIGHT}[ Farming{Style.RESET_ALL}"
                         f"{Fore.GREEN + Style.BRIGHT} Is Claimed {Style.RESET_ALL}"
-                        f"{Fore.MAGENTA + Style.BRIGHT}] [ Reward{Style.RESET_ALL}"
-                        f"{Fore.WHITE + Style.BRIGHT} 900 Points {Style.RESET_ALL}"
+                        f"{Fore.MAGENTA + Style.BRIGHT}] [ Balance Now{Style.RESET_ALL}"
+                        f"{Fore.WHITE + Style.BRIGHT} {claim['coins']} Points {Style.RESET_ALL}"
                         f"{Fore.MAGENTA + Style.BRIGHT}]{Style.RESET_ALL}"
                     )
                 else:
@@ -339,7 +350,7 @@ class PitchTalk:
                     )
                 time.sleep(1)
 
-            tasks = self.tasks(token)
+            tasks = self.tasks(token, query)
             if tasks:
                 for task in tasks:
                     if task and task.get('completedAt') is None:
@@ -353,7 +364,7 @@ class PitchTalk:
                         if slug in ["share-x", "share-tiktok"]:
                             continue
 
-                        start = self.start_tasks(token, task_id)
+                        start = self.start_tasks(token, query, task_id)
 
                         if start and start.get('status') == 'VERIFY_REQUESTED':
                             self.log(
@@ -370,7 +381,7 @@ class PitchTalk:
                                 f"{Fore.MAGENTA + Style.BRIGHT} ]{Style.RESET_ALL}"
                             )
 
-                        verified = self.verify_tasks(token)
+                        verified = self.verify_tasks(token, query)
 
                         for verify in verified:
                             if verify and verify.get('status') == 'COMPLETED_CLAIMED':
@@ -402,22 +413,22 @@ class PitchTalk:
                 for _ in range(2):
                     slug = self.get_next_slug()
                     post_link = self.generate_post_link(slug)
-                    create_daily = self.daily_tasks(token, slug, post_link)
+                    create_daily = self.daily_tasks(token, query, slug, post_link)
 
                     if create_daily:
                         self.log(
                             f"{Fore.MAGENTA + Style.BRIGHT}[ Daily Task{Style.RESET_ALL}"
                             f"{Fore.WHITE + Style.BRIGHT} {slug.upper()} {Style.RESET_ALL}"
                             f"{Fore.GREEN + Style.BRIGHT}Is Submitted{Style.RESET_ALL}"
-                            f"{Fore.MAGENTA + Style.BRIGHT} - {Style.RESET_ALL}"
-                            f"{Fore.WHITE + Style.BRIGHT}Balance -750 Points {Style.RESET_ALL}"
+                            f"{Fore.MAGENTA + Style.BRIGHT} ] [ Balance {Style.RESET_ALL}"
+                            f"{Fore.WHITE + Style.BRIGHT}-750 Points{Style.RESET_ALL}"
                             f"{Fore.MAGENTA + Style.BRIGHT} ]{Style.RESET_ALL}"
                         )
                     else:
                         self.log(
                             f"{Fore.MAGENTA + Style.BRIGHT}[ Daily Task{Style.RESET_ALL}"
                             f"{Fore.WHITE + Style.BRIGHT} {slug.upper()} {Style.RESET_ALL}"
-                            f"{Fore.YELLOW + Style.BRIGHT}Isn't Submitted{Style.RESET_ALL}"
+                            f"{Fore.YELLOW + Style.BRIGHT}Is Already Submitted{Style.RESET_ALL}"
                             f"{Fore.MAGENTA + Style.BRIGHT} ]{Style.RESET_ALL}"
                         )
             else:
