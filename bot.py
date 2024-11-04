@@ -220,6 +220,24 @@ class PitchTalk:
         else:
             return None
         
+    def upgrade_level(self, token: str, query: str):
+        url = 'https://api.pitchtalk.app/v1/api/users/upgrade'
+        self.headers.update({
+            'Authorization': f'Bearer {token}',
+            'Content-Type': 'application/json',
+            'X-Telegram-Hash': query
+        })
+
+        response = self.session.post(url, headers=self.headers)
+        if response.status_code == 201:
+            return response.json()
+        else:
+            try:
+                error_message = response.json()["message"]
+                return {"success": False, "message": error_message}
+            except json.JSONDecodeError:
+                return {"success": False, "message": "Unknown error"}
+        
     def question(self):
         while True:
             submit_daily = input("Submitted Daily Tasks? [y/n] -> ").strip().lower()
@@ -228,10 +246,18 @@ class PitchTalk:
                 break
             else:
                 print(f"{Fore.RED+Style.BRIGHT}Invalid Input.{Fore.WHITE+Style.BRIGHT} Choose 'y' to submit or 'n' to skip.{Style.RESET_ALL}")
-
-        return submit_daily
         
-    def process_query(self, query, submit_daily: bool):
+        while True:
+            upgarde = input("Upgade User Level? [y/n] -> ").strip().lower()
+            if upgarde in ["y", "n"]:
+                upgarde = upgarde == "y"
+                break
+            else:
+                print(f"{Fore.RED+Style.BRIGHT}Invalid Input.{Fore.WHITE+Style.BRIGHT} Choose 'y' to submit or 'n' to skip.{Style.RESET_ALL}")
+
+        return submit_daily, upgarde
+        
+    def process_query(self, query, submit_daily: bool, upgrade: bool):
 
         user_id, username = self.load_data(query)
 
@@ -256,6 +282,8 @@ class PitchTalk:
                     f"{Fore.WHITE + Style.BRIGHT} {user['coins']} Points {Style.RESET_ALL}"
                     f"{Fore.MAGENTA + Style.BRIGHT}] [ Ticket{Style.RESET_ALL}"
                     f"{Fore.WHITE + Style.BRIGHT} {user['tickets']} {Style.RESET_ALL}"
+                    f"{Fore.MAGENTA + Style.BRIGHT}] [ Level{Style.RESET_ALL}"
+                    f"{Fore.WHITE + Style.BRIGHT} {user['level']} {Style.RESET_ALL}"
                     f"{Fore.MAGENTA + Style.BRIGHT}]{Style.RESET_ALL}"
                 )
             time.sleep(1)
@@ -408,6 +436,7 @@ class PitchTalk:
                     f"{Fore.RED + Style.BRIGHT} Is None {Style.RESET_ALL}"
                     f"{Fore.MAGENTA + Style.BRIGHT}]{Style.RESET_ALL}"
                 )
+            time.sleep(1)
 
             if submit_daily:
                 for _ in range(2):
@@ -437,13 +466,42 @@ class PitchTalk:
                     f"{Fore.YELLOW + Style.BRIGHT} Skipped {Style.RESET_ALL}"
                     f"{Fore.MAGENTA + Style.BRIGHT}]{Style.RESET_ALL}"
                 )
+            time.sleep(1)
+
+            if upgrade:
+                upgrade_level = self.upgrade_level(token, query)
+                if upgrade_level and upgrade_level["success"]:
+                    self.log(
+                        f"{Fore.MAGENTA + Style.BRIGHT}[ Upgrade{Style.RESET_ALL}"
+                        f"{Fore.WHITE + Style.BRIGHT} Level {user['level']+1} {Style.RESET_ALL}"
+                        f"{Fore.GREEN + Style.BRIGHT}Is Success{Style.RESET_ALL}"
+                        f"{Fore.MAGENTA + Style.BRIGHT} ]{Style.RESET_ALL}"
+                    )
+                else:
+                    error_message = upgrade_level["message"]
+                    self.log(
+                        f"{Fore.MAGENTA + Style.BRIGHT}[ Upgrade{Style.RESET_ALL}"
+                        f"{Fore.WHITE + Style.BRIGHT} Level {user['level']+1} {Style.RESET_ALL}"
+                        f"{Fore.RED + Style.BRIGHT}Isn't Success{Style.RESET_ALL}"
+                        f"{Fore.MAGENTA + Style.BRIGHT} ] [ Reason{Style.RESET_ALL}"
+                        f"{Fore.WHITE + Style.BRIGHT} {error_message} {Style.RESET_ALL}"
+                        f"{Fore.MAGENTA + Style.BRIGHT}]{Style.RESET_ALL}"
+                    )
+            else:
+                self.log(
+                    f"{Fore.MAGENTA + Style.BRIGHT}[ Upgrade{Style.RESET_ALL}"
+                    f"{Fore.WHITE + Style.BRIGHT} Level {user['level']+1} {Style.RESET_ALL}"
+                    f"{Fore.YELLOW + Style.BRIGHT}Skipped{Style.RESET_ALL}"
+                    f"{Fore.MAGENTA + Style.BRIGHT} ]{Style.RESET_ALL}"
+                )
+            time.sleep(1)
                 
     def main(self):
         try:
             with open('query.txt', 'r') as file:
                 queries = [line.strip() for line in file if line.strip()]
 
-            submit_daily = self.question()
+            submit_daily, upgrade = self.question()
 
             while True:
                 self.clear_terminal()
@@ -457,8 +515,9 @@ class PitchTalk:
                 for query in queries:
                     query = query.strip()
                     if query:
-                        self.process_query(query, submit_daily)
+                        self.process_query(query, submit_daily, upgrade)
                         self.log(f"{Fore.CYAN + Style.BRIGHT}-{Style.RESET_ALL}"*75)
+                        time.sleep(3)
 
                 seconds = 1800
                 while seconds > 0:
