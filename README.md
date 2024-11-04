@@ -11,6 +11,7 @@ Register Here : [Pitchtalk](https://t.me/pitchtalk_bot/app?startapp=3dbacc)
   - Auto Start and Claim Farming
   - Auto Complete General Tasks
   - Auto Complete Daily Tasks [y/n]
+  - Auto Upgrade Level [y/n]
   - Multi Account
 
 ## Prasyarat
