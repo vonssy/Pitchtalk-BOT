@@ -232,11 +232,7 @@ class PitchTalk:
         if response.status_code == 201:
             return response.json()
         else:
-            try:
-                error_message = response.json()["message"]
-                return {"success": False, "message": error_message}
-            except json.JSONDecodeError:
-                return {"success": False, "message": "Unknown error"}
+            return response.json()
         
     def question(self):
         while True:
@@ -253,7 +249,7 @@ class PitchTalk:
                 upgarde = upgarde == "y"
                 break
             else:
-                print(f"{Fore.RED+Style.BRIGHT}Invalid Input.{Fore.WHITE+Style.BRIGHT} Choose 'y' to submit or 'n' to skip.{Style.RESET_ALL}")
+                print(f"{Fore.RED+Style.BRIGHT}Invalid Input.{Fore.WHITE+Style.BRIGHT} Choose 'y' to upgrade or 'n' to skip.{Style.RESET_ALL}")
 
         return submit_daily, upgarde
         
@@ -470,22 +466,22 @@ class PitchTalk:
 
             if upgrade:
                 upgrade_level = self.upgrade_level(token, query)
-                if upgrade_level and upgrade_level["success"]:
+                if isinstance(upgrade_level, dict) and 'message' in upgrade_level:
+                    error_message = upgrade_level['message']
+                    self.log(
+                        f"{Fore.MAGENTA + Style.BRIGHT}[ Upgrade{Style.RESET_ALL}"
+                        f"{Fore.WHITE + Style.BRIGHT} Level {user['level']+1} {Style.RESET_ALL}"
+                        f"{Fore.RED + Style.BRIGHT}Isn't Success{Style.RESET_ALL}"
+                        f"{Fore.MAGENTA + Style.BRIGHT}] [ Reason{Style.RESET_ALL}"
+                        f"{Fore.WHITE + Style.BRIGHT} {error_message} {Style.RESET_ALL}"
+                        f"{Fore.MAGENTA + Style.BRIGHT}]{Style.RESET_ALL}"
+                    )
+                else:
                     self.log(
                         f"{Fore.MAGENTA + Style.BRIGHT}[ Upgrade{Style.RESET_ALL}"
                         f"{Fore.WHITE + Style.BRIGHT} Level {user['level']+1} {Style.RESET_ALL}"
                         f"{Fore.GREEN + Style.BRIGHT}Is Success{Style.RESET_ALL}"
                         f"{Fore.MAGENTA + Style.BRIGHT} ]{Style.RESET_ALL}"
-                    )
-                else:
-                    error_message = upgrade_level["message"]
-                    self.log(
-                        f"{Fore.MAGENTA + Style.BRIGHT}[ Upgrade{Style.RESET_ALL}"
-                        f"{Fore.WHITE + Style.BRIGHT} Level {user['level']+1} {Style.RESET_ALL}"
-                        f"{Fore.RED + Style.BRIGHT}Isn't Success{Style.RESET_ALL}"
-                        f"{Fore.MAGENTA + Style.BRIGHT} ] [ Reason{Style.RESET_ALL}"
-                        f"{Fore.WHITE + Style.BRIGHT} {error_message} {Style.RESET_ALL}"
-                        f"{Fore.MAGENTA + Style.BRIGHT}]{Style.RESET_ALL}"
                     )
             else:
                 self.log(
