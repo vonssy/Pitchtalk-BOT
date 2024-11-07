@@ -86,7 +86,7 @@ class PitchTalk:
             return response.json()
         else:
             return None
-        
+
     def claim_refferal(self, token: str, query: str):
         url = 'https://api.pitchtalk.app/v1/api/users/claim-referral'
         self.headers.update({
@@ -190,35 +190,6 @@ class PitchTalk:
             return response.json()
         else:
             return []
-
-    def generate_post_link(self, slug):
-        randomNick = ''.join(random.choices('abcdefghijklmnopqrstuvwxyz', k=8))
-        randomId = str(random.randint(100000, 999999))
-
-        if slug == 'share-x':
-            return f"https://x.com/{randomNick}/status/{randomId}"
-        elif slug == 'share-tiktok':
-            return f"https://www.tiktok.com/@{randomNick}/video/{randomId}?is_from_webapp=1&sender_device=pc"
-
-    def get_next_slug(self):
-        slug = self.slugs[self.current_slug_index]
-        self.current_slug_index = (self.current_slug_index + 1) % len(self.slugs)
-        return slug
-
-    def daily_tasks(self, token: str, query: str, slug: str, post_link: str):
-        url = 'https://api.pitchtalk.app/v1/api/tasks/create-daily'
-        data = json.dumps({'slug': slug, 'proof': post_link})
-        self.headers.update({
-            'Authorization': f'Bearer {token}',
-            'Content-Type': 'application/json',
-            'X-Telegram-Hash': query
-        })
-
-        response = self.session.post(url, headers=self.headers, data=data)
-        if response.status_code == 201:
-            return response.json()
-        else:
-            return None
         
     def upgrade_level(self, token: str, query: str):
         url = 'https://api.pitchtalk.app/v1/api/users/upgrade'
@@ -234,26 +205,86 @@ class PitchTalk:
         else:
             return response.json()
         
+    def upgrade_speed(self, token: str, query: str):
+        url = 'https://api.pitchtalk.app/v1/api/users/upgrade-speed'
+        self.headers.update({
+            'Authorization': f'Bearer {token}',
+            'Content-Type': 'application/json',
+            'X-Telegram-Hash': query
+        })
+
+        response = self.session.post(url, headers=self.headers)
+        if response.status_code == 201:
+            return response.json()
+        else:
+            return response.json()
+        
+    def upgrade_capacity(self, token: str, query: str):
+        url = 'https://api.pitchtalk.app/v1/api/users/upgrade-capacity'
+        self.headers.update({
+            'Authorization': f'Bearer {token}',
+            'Content-Type': 'application/json',
+            'X-Telegram-Hash': query
+        })
+
+        response = self.session.post(url, headers=self.headers)
+        if response.status_code == 201:
+            return response.json()
+        else:
+            return response.json()
+        
     def question(self):
         while True:
-            submit_daily = input("Submitted Daily Tasks? [y/n] -> ").strip().lower()
-            if submit_daily in ["y", "n"]:
-                submit_daily = submit_daily == "y"
-                break
-            else:
-                print(f"{Fore.RED+Style.BRIGHT}Invalid Input.{Fore.WHITE+Style.BRIGHT} Choose 'y' to submit or 'n' to skip.{Style.RESET_ALL}")
-        
-        while True:
-            upgarde = input("Upgade User Level? [y/n] -> ").strip().lower()
-            if upgarde in ["y", "n"]:
-                upgarde = upgarde == "y"
+            upgrade_level = input("Upgrade User Level? [y/n] -> ").strip().lower()
+            if upgrade_level in ["y", "n"]:
+                upgrade_level = upgrade_level == "y"
                 break
             else:
                 print(f"{Fore.RED+Style.BRIGHT}Invalid Input.{Fore.WHITE+Style.BRIGHT} Choose 'y' to upgrade or 'n' to skip.{Style.RESET_ALL}")
 
-        return submit_daily, upgarde
+        while True:
+            upgrade_speed = input("Upgrade Speed Booster Level? [y/n] -> ").strip().lower()
+            if upgrade_speed in ["y", "n"]:
+                upgrade_speed = upgrade_speed == "y"
+                break
+            else:
+                print(f"{Fore.RED+Style.BRIGHT}Invalid Input.{Fore.WHITE+Style.BRIGHT} Choose 'y' to upgrade or 'n' to skip.{Style.RESET_ALL}")
+
+        speed_count = 0
+        if upgrade_speed:
+            while True:
+                try:
+                    speed_count = int(input("How many times? -> "))
+                    if speed_count > 0:
+                        break
+                    else:
+                        print(f"{Fore.RED+Style.BRIGHT}Please enter a positive number.{Style.RESET_ALL}")
+                except ValueError:
+                    print(f"{Fore.RED+Style.BRIGHT}Invalid input. Enter a number.{Style.RESET_ALL}")
         
-    def process_query(self, query, submit_daily: bool, upgrade: bool):
+        while True:
+            upgrade_capacity = input("Upgrade Time Booster Level? [y/n] -> ").strip().lower()
+            if upgrade_capacity in ["y", "n"]:
+                upgrade_capacity = upgrade_capacity == "y"
+                break
+            else:
+                print(f"{Fore.RED+Style.BRIGHT}Invalid Input.{Fore.WHITE+Style.BRIGHT} Choose 'y' to upgrade or 'n' to skip.{Style.RESET_ALL}")
+
+        capacity_count = 0
+        if upgrade_capacity:
+            while True:
+                try:
+                    capacity_count = int(input("How many times? -> "))
+                    if capacity_count > 0:
+                        break
+                    else:
+                        print(f"{Fore.RED+Style.BRIGHT}Please enter a positive number.{Style.RESET_ALL}")
+                except ValueError:
+                    print(f"{Fore.RED+Style.BRIGHT}Invalid input. Enter a number.{Style.RESET_ALL}")
+
+        return upgrade_level, upgrade_speed, speed_count, upgrade_capacity, capacity_count
+        
+    def process_query(self, query, upgrade_level: bool, upgrade_speed: bool, speed_count: int, upgrade_capacity: bool, capacity_count: int):
 
         user_id, username = self.load_data(query)
 
@@ -377,19 +408,13 @@ class PitchTalk:
             tasks = self.tasks(token, query)
             if tasks:
                 for task in tasks:
+                    task_id = task['id']
+                    title = task['template']['title']
+                    reward_coin = task['template']['rewardCoins']
+                    reward_ticket = task['template']['rewardTickets']
+
                     if task and task.get('completedAt') is None:
-                        task_id = task['id']
-                        title = task['template']['title']
-                        reward_coin = task['template']['rewardCoins']
-                        reward_ticket = task['template']['rewardTickets']
-
-                        slug = task['template']['slug']
-
-                        if slug in ["share-x", "share-tiktok"]:
-                            continue
-
                         start = self.start_tasks(token, query, task_id)
-
                         if start and start.get('status') == 'VERIFY_REQUESTED':
                             self.log(
                                 f"{Fore.MAGENTA + Style.BRIGHT}[ General Task{Style.RESET_ALL}"
@@ -434,42 +459,12 @@ class PitchTalk:
                 )
             time.sleep(1)
 
-            if submit_daily:
-                for _ in range(2):
-                    slug = self.get_next_slug()
-                    post_link = self.generate_post_link(slug)
-                    create_daily = self.daily_tasks(token, query, slug, post_link)
-
-                    if create_daily:
-                        self.log(
-                            f"{Fore.MAGENTA + Style.BRIGHT}[ Daily Task{Style.RESET_ALL}"
-                            f"{Fore.WHITE + Style.BRIGHT} {slug.upper()} {Style.RESET_ALL}"
-                            f"{Fore.GREEN + Style.BRIGHT}Is Submitted{Style.RESET_ALL}"
-                            f"{Fore.MAGENTA + Style.BRIGHT} ] [ Balance {Style.RESET_ALL}"
-                            f"{Fore.WHITE + Style.BRIGHT}-750 Points{Style.RESET_ALL}"
-                            f"{Fore.MAGENTA + Style.BRIGHT} ]{Style.RESET_ALL}"
-                        )
-                    else:
-                        self.log(
-                            f"{Fore.MAGENTA + Style.BRIGHT}[ Daily Task{Style.RESET_ALL}"
-                            f"{Fore.WHITE + Style.BRIGHT} {slug.upper()} {Style.RESET_ALL}"
-                            f"{Fore.YELLOW + Style.BRIGHT}Is Already Submitted{Style.RESET_ALL}"
-                            f"{Fore.MAGENTA + Style.BRIGHT} ]{Style.RESET_ALL}"
-                        )
-            else:
-                self.log(
-                    f"{Fore.MAGENTA + Style.BRIGHT}[ Daily Task{Style.RESET_ALL}"
-                    f"{Fore.YELLOW + Style.BRIGHT} Skipped {Style.RESET_ALL}"
-                    f"{Fore.MAGENTA + Style.BRIGHT}]{Style.RESET_ALL}"
-                )
-            time.sleep(1)
-
-            if upgrade:
-                upgrade_level = self.upgrade_level(token, query)
-                if isinstance(upgrade_level, dict) and 'message' in upgrade_level:
-                    error_message = upgrade_level['message']
+            if upgrade_level:
+                upgrade = self.upgrade_level(token, query)
+                if isinstance(upgrade, dict) and 'message' in upgrade:
+                    error_message = upgrade['message']
                     self.log(
-                        f"{Fore.MAGENTA + Style.BRIGHT}[ Upgrade{Style.RESET_ALL}"
+                        f"{Fore.MAGENTA + Style.BRIGHT}[ Upgrade User{Style.RESET_ALL}"
                         f"{Fore.WHITE + Style.BRIGHT} Level {user['level']+1} {Style.RESET_ALL}"
                         f"{Fore.RED + Style.BRIGHT}Isn't Success{Style.RESET_ALL}"
                         f"{Fore.MAGENTA + Style.BRIGHT}] [ Reason{Style.RESET_ALL}"
@@ -478,26 +473,102 @@ class PitchTalk:
                     )
                 else:
                     self.log(
-                        f"{Fore.MAGENTA + Style.BRIGHT}[ Upgrade{Style.RESET_ALL}"
+                        f"{Fore.MAGENTA + Style.BRIGHT}[ Upgrade User{Style.RESET_ALL}"
                         f"{Fore.WHITE + Style.BRIGHT} Level {user['level']+1} {Style.RESET_ALL}"
                         f"{Fore.GREEN + Style.BRIGHT}Is Success{Style.RESET_ALL}"
                         f"{Fore.MAGENTA + Style.BRIGHT} ]{Style.RESET_ALL}"
                     )
             else:
                 self.log(
-                    f"{Fore.MAGENTA + Style.BRIGHT}[ Upgrade{Style.RESET_ALL}"
+                    f"{Fore.MAGENTA + Style.BRIGHT}[ Upgrade User{Style.RESET_ALL}"
                     f"{Fore.WHITE + Style.BRIGHT} Level {user['level']+1} {Style.RESET_ALL}"
                     f"{Fore.YELLOW + Style.BRIGHT}Skipped{Style.RESET_ALL}"
                     f"{Fore.MAGENTA + Style.BRIGHT} ]{Style.RESET_ALL}"
                 )
             time.sleep(1)
-                
+
+
+            speed_level = user['speedBoostLevel']
+            if upgrade_speed:
+                for i in range(speed_count):
+                    upgrade = self.upgrade_speed(token, query)
+                    if isinstance(upgrade, dict) and 'message' in upgrade:
+                        error_message = upgrade['message']
+                        if "BadRequestException:" in error_message:
+                            error_message = error_message.split("BadRequestException:")[1].strip()
+
+                        self.log(
+                            f"{Fore.MAGENTA + Style.BRIGHT}[ Upgrade Speed{Style.RESET_ALL}"
+                            f"{Fore.WHITE + Style.BRIGHT} Level {speed_level+1} {Style.RESET_ALL}"
+                            f"{Fore.RED + Style.BRIGHT}Isn't Success{Style.RESET_ALL}"
+                            f"{Fore.MAGENTA + Style.BRIGHT}] [ Reason{Style.RESET_ALL}"
+                            f"{Fore.WHITE + Style.BRIGHT} {error_message} {Style.RESET_ALL}"
+                            f"{Fore.MAGENTA + Style.BRIGHT}]{Style.RESET_ALL}"
+                        )   
+                        break
+
+                    else:
+                        speed_level = upgrade.get('speedBoostLevel', speed_level)
+                        self.log(
+                            f"{Fore.MAGENTA + Style.BRIGHT}[ Upgrade Speed{Style.RESET_ALL}"
+                            f"{Fore.WHITE + Style.BRIGHT} Level {speed_level} {Style.RESET_ALL}"
+                            f"{Fore.GREEN + Style.BRIGHT}Is Success{Style.RESET_ALL}"
+                            f"{Fore.MAGENTA + Style.BRIGHT} ]{Style.RESET_ALL}"
+                        )
+                    time.sleep(1)
+            else:
+                self.log(
+                    f"{Fore.MAGENTA + Style.BRIGHT}[ Upgrade Speed{Style.RESET_ALL}"
+                    f"{Fore.WHITE + Style.BRIGHT} Level {speed_level+1} {Style.RESET_ALL}"
+                    f"{Fore.YELLOW + Style.BRIGHT}Skipped{Style.RESET_ALL}"
+                    f"{Fore.MAGENTA + Style.BRIGHT} ]{Style.RESET_ALL}"
+                )
+            time.sleep(1)
+
+
+            capacity_level = user['timeBoostLevel']
+            if upgrade_capacity:
+                for i in range(capacity_count):
+                    upgrade = self.upgrade_capacity(token, query)
+                    if isinstance(upgrade, dict) and 'message' in upgrade:
+                        error_message = upgrade['message']
+                        if "BadRequestException:" in error_message:
+                            error_message = error_message.split("BadRequestException:")[1].strip()
+
+                        self.log(
+                            f"{Fore.MAGENTA + Style.BRIGHT}[ Upgrade Time{Style.RESET_ALL}"
+                            f"{Fore.WHITE + Style.BRIGHT} Level {capacity_level+1} {Style.RESET_ALL}"
+                            f"{Fore.RED + Style.BRIGHT}Isn't Success{Style.RESET_ALL}"
+                            f"{Fore.MAGENTA + Style.BRIGHT}] [ Reason{Style.RESET_ALL}"
+                            f"{Fore.WHITE + Style.BRIGHT} {error_message} {Style.RESET_ALL}"
+                            f"{Fore.MAGENTA + Style.BRIGHT}]{Style.RESET_ALL}"
+                        )   
+                        break
+
+                    else:
+                        capacity_level = upgrade.get('timeBoostLevel', capacity_level)
+                        self.log(
+                            f"{Fore.MAGENTA + Style.BRIGHT}[ Upgrade Time{Style.RESET_ALL}"
+                            f"{Fore.WHITE + Style.BRIGHT} Level {capacity_level} {Style.RESET_ALL}"
+                            f"{Fore.GREEN + Style.BRIGHT}Is Success{Style.RESET_ALL}"
+                            f"{Fore.MAGENTA + Style.BRIGHT} ]{Style.RESET_ALL}"
+                        )
+                    time.sleep(1)
+            else:
+                self.log(
+                    f"{Fore.MAGENTA + Style.BRIGHT}[ Upgrade Time{Style.RESET_ALL}"
+                    f"{Fore.WHITE + Style.BRIGHT} Level {capacity_level+1} {Style.RESET_ALL}"
+                    f"{Fore.YELLOW + Style.BRIGHT}Skipped{Style.RESET_ALL}"
+                    f"{Fore.MAGENTA + Style.BRIGHT} ]{Style.RESET_ALL}"
+                )
+            time.sleep(1)
+       
     def main(self):
         try:
             with open('query.txt', 'r') as file:
                 queries = [line.strip() for line in file if line.strip()]
 
-            submit_daily, upgrade = self.question()
+            upgrade_level, upgrade_speed, speed_count, upgrade_capacity, capacity_count = self.question()
 
             while True:
                 self.clear_terminal()
@@ -511,7 +582,7 @@ class PitchTalk:
                 for query in queries:
                     query = query.strip()
                     if query:
-                        self.process_query(query, submit_daily, upgrade)
+                        self.process_query(query, upgrade_level, upgrade_speed, speed_count, upgrade_capacity, capacity_count)
                         self.log(f"{Fore.CYAN + Style.BRIGHT}-{Style.RESET_ALL}"*75)
                         time.sleep(3)
 
