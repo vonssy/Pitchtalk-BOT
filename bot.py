@@ -162,7 +162,6 @@ class PitchTalk:
         for attempt in range(retries):
             try:
                 response = self.session.post(url, headers=self.headers, timeout=10)
-                print(response.status_code, response.text)
                 response.raise_for_status()
                 return response.json()
             except (requests.RequestException, requests.Timeout, ValueError) as e:
@@ -190,7 +189,6 @@ class PitchTalk:
         for attempt in range(retries):
             try:
                 response = self.session.post(url, headers=self.headers, timeout=10)
-                print(response.status_code, response.text)
                 response.raise_for_status()
                 return response.json()
             except (requests.RequestException, requests.Timeout, ValueError) as e:
