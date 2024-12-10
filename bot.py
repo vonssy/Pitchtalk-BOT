@@ -270,7 +270,7 @@ class PitchTalk:
             try:
                 response = self.session.get(url, headers=self.headers, timeout=10)
                 response.raise_for_status()
-                return response.json()[0]
+                return response.json()
             except (requests.RequestException, requests.Timeout, ValueError) as e:
                 if attempt < retries - 1:
                     print(
@@ -496,7 +496,7 @@ class PitchTalk:
                     )
 
             else:
-                now = now = datetime.now(timezone.utc)
+                now = datetime.now(timezone.utc)
                 end_farm_utc = datetime.strptime(farm['endTime'], '%Y-%m-%dT%H:%M:%S.%fZ').replace(tzinfo=timezone.utc)
                 end_farm_wib = end_farm_utc.astimezone(wib).strftime('%x %X %Z')
 
@@ -548,23 +548,36 @@ class PitchTalk:
                             time.sleep(3)
 
                             verify = self.verify_tasks(token, query)
-                            if verify and verify['status'] == "COMPLETED_CLAIMED":
-                                self.log(
-                                    f"{Fore.MAGENTA + Style.BRIGHT}[ General Task{Style.RESET_ALL}"
-                                    f"{Fore.WHITE + Style.BRIGHT} {title} {Style.RESET_ALL}"
-                                    f"{Fore.GREEN + Style.BRIGHT}Is Verified{Style.RESET_ALL}"
-                                    f"{Fore.MAGENTA + Style.BRIGHT} ] [ Reward{Style.RESET_ALL}"
-                                    f"{Fore.WHITE + Style.BRIGHT} {reward_coin} $PITCH {Style.RESET_ALL}"
-                                    f"{Fore.MAGENTA + Style.BRIGHT}-{Style.RESET_ALL}"
-                                    f"{Fore.WHITE + Style.BRIGHT} {reward_ticket} Ticket {Style.RESET_ALL}"
-                                    f"{Fore.MAGENTA + Style.BRIGHT}]{Style.RESET_ALL}"
-                                )
+                            if verify:
+                                status = verify[0]['status']
+                                if status == "COMPLETED_CLAIMED":
+                                    self.log(
+                                        f"{Fore.MAGENTA + Style.BRIGHT}[ General Task{Style.RESET_ALL}"
+                                        f"{Fore.WHITE + Style.BRIGHT} {title} {Style.RESET_ALL}"
+                                        f"{Fore.GREEN + Style.BRIGHT}Is Verified{Style.RESET_ALL}"
+                                        f"{Fore.MAGENTA + Style.BRIGHT} ] [ Reward{Style.RESET_ALL}"
+                                        f"{Fore.WHITE + Style.BRIGHT} {reward_coin} $PITCH {Style.RESET_ALL}"
+                                        f"{Fore.MAGENTA + Style.BRIGHT}-{Style.RESET_ALL}"
+                                        f"{Fore.WHITE + Style.BRIGHT} {reward_ticket} Ticket {Style.RESET_ALL}"
+                                        f"{Fore.MAGENTA + Style.BRIGHT}]{Style.RESET_ALL}"
+                                    )
+                                else:
+                                    self.log(
+                                        f"{Fore.MAGENTA + Style.BRIGHT}[ General Task{Style.RESET_ALL}"
+                                        f"{Fore.WHITE + Style.BRIGHT} {title} {Style.RESET_ALL}"
+                                        f"{Fore.RED + Style.BRIGHT}Isn't Verified{Style.RESET_ALL}"
+                                        f"{Fore.MAGENTA + Style.BRIGHT} ] [ Reason{Style.RESET_ALL}"
+                                        f"{Fore.WHITE + Style.BRIGHT} Not Eligible {Style.RESET_ALL}"
+                                        f"{Fore.MAGENTA + Style.BRIGHT}]{Style.RESET_ALL}"
+                                    )                         
                             else:
                                 self.log(
                                     f"{Fore.MAGENTA + Style.BRIGHT}[ General Task{Style.RESET_ALL}"
                                     f"{Fore.WHITE + Style.BRIGHT} {title} {Style.RESET_ALL}"
                                     f"{Fore.RED + Style.BRIGHT}Isn't Verified{Style.RESET_ALL}"
-                                    f"{Fore.MAGENTA + Style.BRIGHT} ]{Style.RESET_ALL}"
+                                    f"{Fore.MAGENTA + Style.BRIGHT} ] [ Reason{Style.RESET_ALL}"
+                                    f"{Fore.WHITE + Style.BRIGHT} Response Data Is None {Style.RESET_ALL}"
+                                    f"{Fore.MAGENTA + Style.BRIGHT}]{Style.RESET_ALL}"
                                 )                            
                         else:
                             self.log(
